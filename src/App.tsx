@@ -71,14 +71,13 @@ function App() {
 	const handleSearch = (event: React.MouseEvent<HTMLButtonElement>) => {
 		axios
 			.post(
-				'https://tools.wordstream.com/api/free-tools/google/keywords',
+				'https://6e26-65-109-52-221.ngrok-free.app/api/keywords',
 				{
 					keyword: keyword,
-					locationIds: [2840],
 				},
 				{
 					headers: {
-						'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'any',
 					},
 				}
 			)
