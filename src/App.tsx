@@ -71,15 +71,19 @@ function App() {
 	const handleSearch = (event: React.MouseEvent<HTMLButtonElement>) => {
 		axios
 			.post(
-				'https://6e26-65-109-52-221.ngrok-free.app/api/keywords',
-				{
-					keyword: keyword,
-				},
-				{
-					headers: {
-            'ngrok-skip-browser-warning': 'any',
-					},
-				}
+				// 'https://6e26-65-109-52-221.ngrok-free.app/api/keywords',
+				// {
+				// 	keyword: keyword,
+				// },
+				// {
+				// 	headers: {
+        //     'ngrok-skip-browser-warning': 'any',
+				// 	},
+				// }
+        'http://localhost:4000/api/keywords',
+        {
+          keyword: keyword,
+        }
 			)
 			.then((res) => {
 				setRows(res.data.keywords);
