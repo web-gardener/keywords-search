@@ -1,152 +1,168 @@
-import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
-import React from 'react';
-import './App.css';
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import Stepper from '@mui/material/Stepper';
+import Step from '@mui/material/Step';
+import StepLabel from '@mui/material/StepLabel';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, TextField } from '@mui/material';
 import axios from 'axios';
+import * as FileSaver from 'file-saver';
 
-interface Column {
-	id: 'keywordText' | 'competition' | 'competitionIndex' | 'searchVolume' | 'lowTopPageBid' | 'highTopPageBid';
-	label: string;
-	minWidth?: number;
-	align?: 'right';
-	format?: (value: number) => string;
-}
+const steps = ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5'];
 
-const columns: readonly Column[] = [
-	{ id: 'keywordText', label: 'Keyword Text', minWidth: 170 },
-	{ id: 'competition', label: 'Competition', minWidth: 100 },
-	{
-		id: 'competitionIndex',
-		label: 'Competition Index',
-		minWidth: 170,
-		align: 'right',
-		format: (value: number) => value.toLocaleString('en-US'),
-	},
-	{
-		id: 'searchVolume',
-		label: 'Search Volume',
-		minWidth: 170,
-		align: 'right',
-		format: (value: number) => value.toLocaleString('en-US'),
-	},
-	{
-		id: 'lowTopPageBid',
-		label: 'Low Top Page Bid',
-		minWidth: 170,
-		align: 'right',
-		format: (value: number) => value.toFixed(2),
-	},
-	{
-		id: 'highTopPageBid',
-		label: 'High Top Page Bid',
-		minWidth: 170,
-		align: 'right',
-		// format: (value: number) => value.toFixed(2),
-	},
-];
+export default function HorizontalLinearStepper() {
+	const [activeStep, setActiveStep] = React.useState(0);
+	const [skipped, setSkipped] = React.useState(new Set<number>());
+	const [browserName, setBrowserName] = React.useState('Google');
+	const [url, setUrl] = React.useState('');
+	const [keywords, setKeywords] = React.useState([]);
+	const [duration, setDuration] = React.useState(0);
+	const [nextDisable, setNextDisable] = React.useState(false);
+	const ServerURL = 'https://9f4c-65-109-52-221.ngrok-free.app';
 
-interface Data {
-	keywordText: string;
-	competition: string;
-	competitionIndex: number;
-	searchVolume: number;
-	lowTopPageBid: number;
-	highTopPageBid: number;
-}
-
-function App() {
-	const [page, setPage] = React.useState(0);
-	const [rowsPerPage, setRowsPerPage] = React.useState(10);
-	const [keyword, setKeyword] = React.useState('');
-	const [rows, setRows] = React.useState<Data[]>([]);
-
-	const handleChangePage = (event: unknown, newPage: number) => {
-		setPage(newPage);
+	const isStepSkipped = (step: number) => {
+		return skipped.has(step);
 	};
 
-	const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setRowsPerPage(+event.target.value);
-		setPage(0);
+	const handleNext = () => {
+		let newSkipped = skipped;
+		if (isStepSkipped(activeStep)) {
+			newSkipped = new Set(newSkipped.values());
+			newSkipped.delete(activeStep);
+		}
+
+		if (activeStep === 2) {
+			scrapeKeywords();
+		} else {
+			setActiveStep((prevActiveStep) => prevActiveStep + 1);
+		}
+		setSkipped(newSkipped);
 	};
 
-	const handleSearch = (event: React.MouseEvent<HTMLButtonElement>) => {
+	const handleBack = () => {
+		setActiveStep((prevActiveStep) => prevActiveStep - 1);
+	};
+
+	const handleReset = () => {
+		setActiveStep(0);
+	};
+
+	const scrapeKeywords = () => {
+		const start = performance.now();
+		setNextDisable(true);
 		axios
-			.post(
-				// 'https://6e26-65-109-52-221.ngrok-free.app/api/keywords',
-				// {
-				// 	keyword: keyword,
-				// },
-				// {
-				// 	headers: {
-        //     'ngrok-skip-browser-warning': 'any',
-				// 	},
-				// }
-        'http://localhost:4000/api/keywords',
-        {
-          keyword: keyword,
-        }
-			)
+			.get(`${ServerURL}/scrape_keywords?url=https://${url}`)
 			.then((res) => {
-				setRows(res.data.keywords);
+				const end = performance.now();
+				setDuration(Math.ceil(end - start) / 1000);
+				setActiveStep((prevActiveStep) => prevActiveStep + 1);
+				setKeywords(res.data);
+				setNextDisable(false);
 			})
 			.catch((err) => {
 				console.log(err);
 			});
 	};
 
-	const handleChangeKeyword = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setKeyword(event.target.value);
+  const saveFile = (data: string[], filename: string) => {
+    const file = new Blob([data.join('\n')], {type: 'text/plain;charset=utf-8'});
+    FileSaver.saveAs(file, filename);
+  }
+
+	const handleDownload = () => {
+		const filename = "keywords.txt";
+    saveFile(keywords, filename);
 	};
 
 	return (
-		<Box className='App'>
-			<Box>
-				<Typography variant='h3' component='h1' gutterBottom>
-					Keyword Tool
-				</Typography>
-				<Typography variant='h5' component='h2' gutterBottom>
-					Enter a keyword or website URL to find suggestions
-				</Typography>
-				<TextField id='outlined-basic' label='Keywords' variant='outlined' onChange={handleChangeKeyword} />
-				<Button variant='contained' sx={{ height: 56, ml: 2 }} onClick={handleSearch}>
-					Search
-				</Button>
+		<Stack justifyContent='center' alignItems='center' sx={{ height: '100vh' }}>
+			<Box sx={{ maxWidth: '800px', width: '100%' }}>
+				<Stepper activeStep={activeStep}>
+					{steps.map((label, index) => {
+						const stepProps: { completed?: boolean } = {};
+						const labelProps: {
+							optional?: React.ReactNode;
+						} = {};
+						if (isStepSkipped(index)) {
+							stepProps.completed = false;
+						}
+						return (
+							<Step key={label} {...stepProps}>
+								<StepLabel {...labelProps}>{label}</StepLabel>
+							</Step>
+						);
+					})}
+				</Stepper>
+				{activeStep === steps.length ? (
+					<Box>
+						<Box sx={{ height: '300px', mt: 2 }}>
+							<Typography sx={{ mt: 2, mb: 1 }}>All steps completed - you&apos;re finished</Typography>
+						</Box>
+						<Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+							<Box sx={{ flex: '1 1 auto' }} />
+							<Button onClick={handleReset}>Reset</Button>
+						</Box>
+					</Box>
+				) : (
+					<React.Fragment>
+						<Box sx={{ height: '300px', mt: 2, p: 1 }}>
+							{activeStep === 0 && (
+								<FormControl>
+									<RadioGroup aria-labelledby='step-1-group-label' defaultValue='keywords-modules' name='step-1-group'>
+										<FormControlLabel value='keywords-modules' control={<Radio />} label='Keywords Modules' />
+										<FormControlLabel value='duplicates-remover' control={<Radio />} label='Duplicates remover' />
+										<FormControlLabel value='add-prefix-and-suffix' control={<Radio />} label='Add Prefix & Suffix' />
+									</RadioGroup>
+								</FormControl>
+							)}
+							{activeStep === 1 && (
+								<FormControl>
+									<RadioGroup aria-labelledby='step-2-group-label' defaultValue='google' name='step-2-group'>
+										<FormControlLabel value='google' control={<Radio />} label='Google' onClick={(e) => setBrowserName('Google')} />
+										<FormControlLabel value='bing' control={<Radio />} label='Bing' onClick={(e) => setBrowserName('Bing')} />
+										<FormControlLabel value='yahoojp' control={<Radio />} label='YahooJP' onClick={(e) => setBrowserName('YahooJP')} />
+										<FormControlLabel value='ask' control={<Radio />} label='Ask' onClick={(e) => setBrowserName('Ask')} />
+									</RadioGroup>
+								</FormControl>
+							)}
+							{activeStep === 2 && <TextField id='url-input' label='URL link' variant='outlined' value={url} onChange={(e) => setUrl(e.target.value)} />}
+							{activeStep === 3 && (
+								<>
+									<Typography variant='subtitle1' component='p'>
+										Browser : {browserName}
+									</Typography>
+									<Typography variant='subtitle1' component='p'>
+										Scraped kws : {keywords.length}
+									</Typography>
+									<Typography variant='subtitle1' component='p'>
+										Time Taken To Scrap : {duration}s
+									</Typography>
+								</>
+							)}
+							{activeStep === 4 && (
+								<>
+									<Typography variant='subtitle1' component='p'>
+										Download keywords
+									</Typography>
+									<Button variant='contained' onClick={handleDownload}>
+										Download
+									</Button>
+								</>
+							)}
+						</Box>
+						<Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+							<Button color='inherit' disabled={activeStep === 0} onClick={handleBack} sx={{ mr: 1 }}>
+								Back
+							</Button>
+							<Box sx={{ flex: '1 1 auto' }} />
+							<Button onClick={handleNext} disabled={(activeStep === 2 && url === '') || nextDisable}>
+								{activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+							</Button>
+						</Box>
+					</React.Fragment>
+				)}
 			</Box>
-			<Box>
-				<Paper sx={{ width: '90%', overflow: 'hidden', marginLeft: 'auto', marginRight: 'auto', mt: 5 }}>
-					<TableContainer>
-						<Table stickyHeader aria-label='sticky table'>
-							<TableHead>
-								<TableRow>
-									{columns.map((column) => (
-										<TableCell key={column.id} align={column.align} style={{ minWidth: column.minWidth }}>
-											{column.label}
-										</TableCell>
-									))}
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-									return (
-										<TableRow hover role='checkbox' tabIndex={-1} key={row.keywordText}>
-											{columns.map((column) => {
-												const value = row[column.id];
-												return (
-													<TableCell key={column.id} align={column.align}>
-														{column.format && typeof value === 'number' ? column.format(value) : value}
-													</TableCell>
-												);
-											})}
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
-					</TableContainer>
-					<TablePagination rowsPerPageOptions={[10, 25, 100]} component='div' count={rows.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
-				</Paper>
-			</Box>
-		</Box>
+		</Stack>
 	);
 }
-
-export default App;
