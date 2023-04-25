@@ -51,8 +51,9 @@ export default function HorizontalLinearStepper() {
 	const scrapeKeywords = () => {
 		const start = performance.now();
 		setNextDisable(true);
+		const headers = { 'ngrok-skip-browser-warning': 'any' };
 		axios
-			.get(`${ServerURL}/scrape_keywords?url=https://${url}`)
+			.get(`${ServerURL}/scrape_keywords?url=https://${url}`, { headers })
 			.then((res) => {
 				const end = performance.now();
 				setDuration(Math.ceil(end - start) / 1000);
@@ -65,14 +66,14 @@ export default function HorizontalLinearStepper() {
 			});
 	};
 
-  const saveFile = (data: string[], filename: string) => {
-    const file = new Blob([data.join('\n')], {type: 'text/plain;charset=utf-8'});
-    FileSaver.saveAs(file, filename);
-  }
+	const saveFile = (data: string[], filename: string) => {
+		const file = new Blob([data.join('\n')], { type: 'text/plain;charset=utf-8' });
+		FileSaver.saveAs(file, filename);
+	};
 
 	const handleDownload = () => {
-		const filename = "keywords.txt";
-    saveFile(keywords, filename);
+		const filename = 'keywords.txt';
+		saveFile(keywords, filename);
 	};
 
 	return (
