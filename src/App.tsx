@@ -19,7 +19,7 @@ export default function HorizontalLinearStepper() {
 	const [keywords, setKeywords] = React.useState([]);
 	const [duration, setDuration] = React.useState(0);
 	const [nextDisable, setNextDisable] = React.useState(false);
-	const ServerURL = 'https://9f4c-65-109-52-221.ngrok-free.app';
+	const ServerURL = 'https://5905-68-219-111-112.ngrok-free.app';
 
 	const isStepSkipped = (step: number) => {
 		return skipped.has(step);
