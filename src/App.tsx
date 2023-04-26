@@ -52,8 +52,9 @@ export default function HorizontalLinearStepper() {
 		const start = performance.now();
 		setNextDisable(true);
 		const headers = { 'ngrok-skip-browser-warning': 'any' };
+    const scrap_url = url.startsWith("http") ? url : "https://" + url;
 		axios
-			.get(`${ServerURL}/scrape_keywords?url=${url}`, { headers })
+			.get(`${ServerURL}/scrape_keywords?url=${scrap_url}`, { headers })
 			.then((res) => {
 				const end = performance.now();
 				setDuration(Math.ceil(end - start) / 1000);
